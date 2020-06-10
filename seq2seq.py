@@ -167,7 +167,7 @@ class Decoder(nn.Module):
         super(Decoder, self).__init__()
         self.embedding = nn.Embedding(vocab_size, hidden_size)
         self.gru = nn.GRU(hidden_size, hidden_size, batch_first=True)
-        #将每个输出都映射会词表维度，最大值所在的位置对应的词就是预测的目标词
+        #将每个输出都映射回词表维度，最大值所在的位置对应的词就是预测的目标词
         self.liner = nn.Linear(hidden_size, vocab_size)
         self.dropout = nn.Dropout(dropout)
     
@@ -300,11 +300,17 @@ def test(mode, data):
         print("Test Loss:", total_loss/total_words)
 
 def train(model, data, epoches):
+    test_datasets = []
     for epoch in range(epoches):
         model.train()
         total_words = 0
         total_loss = 0.
         for it, (batch_x, batch_x_len, batch_y, batch_y_len) in enumerate(data):
+            if(epoch == 0 and it % 10 == 0):
+                test_datasets.append((batch_x, batch_x_len, batch_y, batch_y_len))
+                continue
+            elif(it % 10 == 0):
+                continue
             batch_x = torch.from_numpy(batch_x).to(device).long()
             batch_x_len = torch.from_numpy(batch_x_len).to(device).long()
             
@@ -339,7 +345,7 @@ def train(model, data, epoches):
                 print("Epoch {} / {}, Iteration: {}, Train Loss: {}".format(epoch, epoches, it, loss.item()))
         print("Epoch {} / {}, Train Loss: {}".format(epoch, epoches, total_loss/total_words))
         if(epoch!=0 and epoch % 100 == 0):
-            test(model, datasets)  #由于数据集没有分出验证数据，为了省事，此处直接用了训练集做验证（可自行手动将训练集拆分）
+            test(model, test_datasets) 
             
 train(model, datasets, epoches=200)
 
